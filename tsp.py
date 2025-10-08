@@ -25,10 +25,10 @@ class SA:
     def __init__(self, iteration, gamma, temp, df):
         # k = iteration, g = gamma, temp = temperature, df = dataframe 
         # initializing some of the constants needed for simualated annealing
-        iteration.self = iteration
-        gamma.self = gamma
-        temp.self = temp
-        df.self = df
+        self.iteration = iteration
+        self.gamma = gamma
+        self.temp = temp
+        self.df = df
     
     def cooling(temp, gamma):
         tnew = temp * gamma
@@ -43,7 +43,7 @@ class SA:
     def length(self, df):
         distance = 0
         for idx in range(len(df)-1):
-            dist = self.func(df.at[idx,'x'], df.at[idx + 1,'x'], df.at[idx,'y'], df.at[idx + 1,'y']) 
+            dist = self.func(df.at[idx,'x'], df.at[idx + 1,'x'], df.at[idx,'y'], df.at[idx + 1,'y'])  # Change to .loc() 
             distance += dist
 
         return distance 
@@ -73,11 +73,40 @@ class SA:
         dnew.at[j, 'y'] = df.at[i, 'y']
 
         return dnew
+    
+    def run(self):
+        iteration = self.iteration
+        gamma = self.gamma
+        temp = self.gamma
+        df = self.df
+
+        version = []
+        version_length = []
+        current = self.length(df)
+        best = current
+        version.append(df)
+        version_length.append(best)
+
+        for k in range(0, iteration):
+            tnew = self.cooling(temp, gamma)
+
+            new = self.swap(df)
+            new_length = self.length(new)
+
+            if self.probability(new, df) == True:
+               if best > new_length:
+                    df = new
+                    best = new_length
+                    version.append(new)
+                    version_length.append(new_length) 
+        
+        return version, version_length
 
 def main():
 
     df = dataframe()
-    print(df)
+    sa = SA(100, .999, 1000, df)
+    vers, vers_len = sa.run()
 
 
 if __name__ == "__main__":
