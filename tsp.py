@@ -30,12 +30,12 @@ class SA:
         self.temp = temp
         self.df = df
     
-    def cooling(temp, gamma):
+    def cooling(self, temp, gamma):
         tnew = temp * gamma
 
         return tnew
 
-    def func(x1, x2, y1, y2):
+    def func(self, x1, x2, y1, y2):
         dist = np.sqrt((x2-x1)**2 + (y2-y1)**2)
 
         return dist
@@ -43,14 +43,14 @@ class SA:
     def length(self, df):
         distance = 0
         for idx in range(len(df)-1):
-            dist = self.func(df.at[idx,'x'], df.at[idx + 1,'x'], df.at[idx,'y'], df.at[idx + 1,'y'])  # Change to .loc() 
+            dist = self.func(df['x'].iloc[idx], df['x'].iloc[idx + 1], df['y'].iloc[idx], df['y'].iloc[idx + 1]) 
             distance += dist
 
         return distance 
 
-    def probability(temp, current, old):
-        prob = np.e(-(current - old)/temp)
-        if min(1, prob) > np.random.randint(0,1):
+    def probability(self, temp, new, current):
+        prob = np.exp(-(new - current)/temp)
+        if min(1, prob) > np.random.uniform(0,1):
 
             return True
         else:
@@ -60,54 +60,71 @@ class SA:
     def swap(self, df):
         dnew = df.copy()
 
-        i = np.random.randint(range(len(df)))
-        j = np.random.randint(range(len(df)))
+        i = np.random.randint(1, len(df))
+        j = np.random.randint(1, len(df))
         if i == j:
             while i == j:
-                i = np.random.randint(range(len(df)))
-                j = np.random.randint(range(len(df)))
+                i = np.random.randint(1, len(df))
+                j = np.random.randint(1, len(df))
 
-        dnew.at[i, 'x'] = df.at[j, 'x']
-        dnew.at[i, 'y'] = df.at[j, 'y']
-        dnew.at[j, 'x'] = df.at[i, 'x']
-        dnew.at[j, 'y'] = df.at[i, 'y']
-
+        dnew.iloc[i], dnew.iloc[j] = dnew.iloc[j].copy(), dnew.iloc[i].copy() 
+  
         return dnew
     
     def run(self):
         iteration = self.iteration
         gamma = self.gamma
-        temp = self.gamma
+        temp = self.temp
         df = self.df
 
         version = []
-        version_length = []
+
         current = self.length(df)
         best = current
-        version.append(df)
-        version_length.append(best)
+        df_current = df.copy()
 
         for k in range(0, iteration):
-            tnew = self.cooling(temp, gamma)
 
-            new = self.swap(df)
-            new_length = self.length(new)
+            df_new = self.swap(df_current)
+            new = self.length(df_new)
+            
+            if new < best:
+                best = new
+                version.append(df_new)
 
-            if self.probability(new, df) == True:
-               if best > new_length:
-                    df = new
-                    best = new_length
-                    version.append(new)
-                    version_length.append(new_length) 
+            if self.probability(temp, new, current):
+                df_current = df_new.copy()
+                current = new
+              
+            temp = self.cooling(temp, gamma)
         
-        return version, version_length
+        return version, best
+
+def plot(df, animate = False):
+    plt.clf()
+    plt.plot(df['x'], df['y'], '-o')
+    plt.title('TSP')
+    plt.xlabel('x position')
+    plt.ylabel('y position')
+
+    if animate:
+        plt.pause(.3)
+        plt.show(block = False)
+
+    else:
+        plt.show(block = True)
 
 def main():
 
     df = dataframe()
-    sa = SA(100, .999, 1000, df)
+    iteration = 1000
+    gamma = .99
+    temperature = 1000
+    sa = SA(iteration, gamma, temperature, df)
     vers, vers_len = sa.run()
 
-
-if __name__ == "__main__":
-    main()
+    for _, df in enumerate(vers):
+        
+        plot(df, True)
+    
+    plot(df)

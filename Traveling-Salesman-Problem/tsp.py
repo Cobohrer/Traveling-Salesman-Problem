@@ -87,14 +87,13 @@ class SA:
 
             df_new = self.swap(df_current)
             new = self.length(df_new)
-            
-            if new < best:
-                best = new
-                version.append(df_new)
 
             if self.probability(temp, new, current):
                 df_current = df_new.copy()
                 current = new
+                if current < best:
+                    best = current
+                    version.append(df_current.copy())
               
             temp = self.cooling(temp, gamma)
         
